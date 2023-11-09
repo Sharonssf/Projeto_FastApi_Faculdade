@@ -1,24 +1,57 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
 
 app = FastAPI()
 
-vendas = {
-    1: {"produto" : "Acer Nitro 5", "preco_unitario" : "5000", "quantidade" : "10"}
-    2: {"produto" : "Alienware", "preco_unitario" : "20000", "quantidade" : "2"}
-    3: {"produto" : "Ideapad 3", "preco_unitario" : "4000", "quantidade" : "15"}
-    4: {"produto" : "Ideapad 3i", "preco_unitario" : "3000", "quantidade" : "25"}
-    5: {"produto" : "Dell  G15", "preco_unitario" : "10000", "quantidade" : "4"}
-}
+# Definindo o modelo de dados para personagens de Invincible
+class Character(BaseModel):
+    name: str
+    alias: str
+    superpower: str
 
+# Lista de personagens de Invincible (simulando uma "base de dados")
+characters_db = []
+
+#Só as boas vindas mesmo
 @app.get("/")
-def home():
-    return "Seja bem vindo a minha primeira API!!"
+def ola():
+    return "Seja bem vindo, a nossa API de personagens de invencivel. Vá até o /docs e liste seus personagens."
 
-@app.get("/vendas")
-def quantidade_de_vendas(vendas: dict):
-    return {"Quantidade das vendas: ": len(vendas)}
+# Operação CREATE (POST) para adicionar um novo personagem
+@app.post("/characters/", response_model=Character)
+def create_character(character: Character):
+    characters_db.append(character)
+    return character
 
-@app.get("/vendas/{id_venda}")
-def pegar_venda(id_venda: int):
-    return vendas[id_venda]
+# Operação READ (GET) para listar todos os personagens
+@app.get("/characters/", response_model=List[Character])
+def read_characters():
+    return characters_db
 
+# Operação READ (GET) para obter detalhes de um personagem específico
+@app.get("/characters/{character_id}", response_model=Character)
+def read_character(character_id: int):
+    if character_id < len(characters_db):
+        return characters_db[character_id]
+    raise HTTPException(status_code=404, detail="Personagem não encontrado")
+
+# Operação UPDATE (PUT) para atualizar os detalhes de um personagem
+@app.put("/characters/{character_id}", response_model=Character)
+def update_character(character_id: int, updated_character: Character):
+    if character_id < len(characters_db):
+        characters_db[character_id] = updated_character
+        return updated_character
+    raise HTTPException(status_code=404, detail="Personagem não encontrado")
+
+# Operação DELETE (DELETE) para excluir um personagem
+@app.delete("/characters/{character_id}", response_model=Character)
+def delete_character(character_id: int):
+    if character_id < len(characters_db):
+        deleted_character = characters_db.pop(character_id)
+        return deleted_character
+    raise HTTPException(status_code=404, detail="Personagem não encontrado")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, port=8000)
