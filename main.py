@@ -1,6 +1,8 @@
+import json
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
+
 
 app = FastAPI()
 
@@ -10,8 +12,22 @@ class Character(BaseModel):
     alias: str
     superpower: str
 
+# Função para carregar os personagens do arquivo
+def load_characters():
+    try:
+        with open("characters.json", "r") as file:
+            characters = json.load(file)
+    except FileNotFoundError:
+        characters = []
+    return characters
+
+# Função para salvar os personagens no arquivo
+def save_characters(characters):
+    with open("characters.json", "w") as file:
+        json.dump(characters, file)
+
 # Lista de personagens de Invincible (simulando uma "base de dados")
-characters_db = []
+characters_db = load_characters()
 
 #Só as boas vindas mesmo
 @app.get("/")
@@ -22,6 +38,7 @@ def ola():
 @app.post("/characters/", response_model=Character)
 def create_character(character: Character):
     characters_db.append(character)
+    save_characters(characters_db)
     return character
 
 # Operação READ (GET) para listar todos os personagens
